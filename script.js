@@ -32,9 +32,9 @@ poseDetection.SupportedModels.MoveNet
 function drawJoint(x,y){
 
 ctx.beginPath()
-ctx.arc(x,y,8,0,Math.PI*2)
+ctx.arc(x,y,40,0,Math.PI*2)
 
-ctx.fillStyle="cyan"
+ctx.fillStyle="rgba(167, 181, 181, 0.48)"
 ctx.fill()
 
 }
@@ -79,7 +79,7 @@ requestAnimationFrame(detect)
 
 }
 
-detect()
+detect() 
 
 }
 
