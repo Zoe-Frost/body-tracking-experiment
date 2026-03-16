@@ -41,13 +41,13 @@ ctx.fill()
 
 function drawGlitch(x,y){
 
-ctx.fillStyle="rgba(255, 255, 255, 0.4)"
+ctx.fillStyle="rgba(120, 193, 208, 0.4)"
 
 ctx.fillRect(
 x + Math.random()*20 -10,
 y + Math.random()*20 -10,
 80,
-3
+30
 )
 
 }
