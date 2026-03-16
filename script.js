@@ -4,16 +4,16 @@ const ctx = canvas.getContext("2d")
 
 let detector
 let particles = []
-let previousPositions = {}
+let ghostFrames = []
 
 // load graphics
 const jointImg = new Image()
 jointImg.src = "assets/joint.svg"
 
-const glitchImg = new Image()
-glitchImg.src = "assets/glitch-dot.svg"
+const particleImg = new Image()
+particleImg.src = "assets/particle.svg"
 
-// body skeleton connections
+// skeleton connections
 const skeleton = [
 ["left_shoulder","right_shoulder"],
 ["left_shoulder","left_elbow"],
@@ -22,7 +22,11 @@ const skeleton = [
 ["right_elbow","right_wrist"],
 ["left_shoulder","left_hip"],
 ["right_shoulder","right_hip"],
-["left_hip","right_hip"]
+["left_hip","right_hip"],
+["left_hip","left_knee"],
+["left_knee","left_ankle"],
+["right_hip","right_knee"],
+["right_knee","right_ankle"]
 ]
 
 // particle class
@@ -33,10 +37,10 @@ constructor(x,y){
 this.x = x
 this.y = y
 
-this.vx = (Math.random()-0.5)*6
-this.vy = (Math.random()-0.5)*6
+this.vx = (Math.random()-0.5)*5
+this.vy = (Math.random()-0.5)*5
 
-this.life = 80
+this.life = 60
 
 }
 
@@ -45,8 +49,8 @@ update(){
 this.x += this.vx
 this.y += this.vy
 
-this.vx *= 0.95
-this.vy *= 0.95
+this.vx *= 0.96
+this.vy *= 0.96
 
 this.life--
 
@@ -54,9 +58,9 @@ this.life--
 
 draw(){
 
-ctx.globalAlpha = this.life/80
+ctx.globalAlpha = this.life/60
 
-ctx.drawImage(glitchImg,this.x,this.y,12,12)
+ctx.drawImage(particleImg,this.x,this.y,10,10)
 
 ctx.globalAlpha = 1
 
@@ -64,24 +68,25 @@ ctx.globalAlpha = 1
 
 }
 
-// setup webcam
+// webcam setup
 async function setupCamera(){
 
 const stream = await navigator.mediaDevices.getUserMedia({
-video:true
+video:{
+width:640,
+height:480
+}
 })
 
 video.srcObject = stream
 
 return new Promise(resolve=>{
-video.onloadedmetadata = ()=>{
-resolve(video)
-}
+video.onloadedmetadata=()=>resolve(video)
 })
 
 }
 
-// main setup
+// initialize
 async function init(){
 
 await setupCamera()
@@ -90,32 +95,23 @@ canvas.width = video.videoWidth
 canvas.height = video.videoHeight
 
 detector = await poseDetection.createDetector(
-poseDetection.SupportedModels.MoveNet
+poseDetection.SupportedModels.MoveNet,
+{
+modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+}
 )
 
 detect()
 
 }
 
-function drawJoint(x,y){
-
-ctx.drawImage(
-jointImg,
-x-15,
-y-15,
-30,
-30
-)
-
-}
-
-// skeleton lines
+// skeleton drawing
 function drawSkeleton(keypoints){
 
 skeleton.forEach(pair=>{
 
-let p1 = keypoints.find(p=>p.name === pair[0])
-let p2 = keypoints.find(p=>p.name === pair[1])
+let p1 = keypoints.find(p=>p.name===pair[0])
+let p2 = keypoints.find(p=>p.name===pair[1])
 
 if(p1 && p2 && p1.score>0.4 && p2.score>0.4){
 
@@ -133,14 +129,47 @@ ctx.stroke()
 
 }
 
-// animation loop
+// ghost trail effect
+function drawGhosts(){
+
+ghostFrames.forEach((frame,i)=>{
+
+ctx.globalAlpha = i / ghostFrames.length * 0.4
+
+ctx.drawImage(frame,0,0)
+
+})
+
+ctx.globalAlpha = 1
+
+}
+
+// detection loop
 async function detect(){
 
 const poses = await detector.estimatePoses(video)
 
 ctx.clearRect(0,0,canvas.width,canvas.height)
 
+// draw video
 ctx.drawImage(video,0,0)
+
+// store ghost frames
+const ghostCanvas = document.createElement("canvas")
+ghostCanvas.width = canvas.width
+ghostCanvas.height = canvas.height
+
+const gctx = ghostCanvas.getContext("2d")
+gctx.drawImage(canvas,0,0)
+
+ghostFrames.push(ghostCanvas)
+
+if(ghostFrames.length > 8){
+ghostFrames.shift()
+}
+
+// draw ghost trail
+drawGhosts()
 
 poses.forEach(pose=>{
 
@@ -148,33 +177,15 @@ drawSkeleton(pose.keypoints)
 
 pose.keypoints.forEach(point=>{
 
-if(point.score > 0.4){
+if(point.score>0.4){
 
-drawJoint(point.x,point.y)
+ctx.drawImage(jointImg,point.x-12,point.y-12,24,24)
 
-// movement detection
-let prev = previousPositions[point.name]
+// spawn particles
+if(particles.length < 300){
 
-if(prev){
-
-let dx = point.x - prev.x
-let dy = point.y - prev.y
-
-let speed = Math.sqrt(dx*dx + dy*dy)
-
-if(speed > 5){
-
-for(let i=0;i<3;i++){
 particles.push(new Particle(point.x,point.y))
-}
 
-}
-
-}
-
-previousPositions[point.name] = {
-x:point.x,
-y:point.y
 }
 
 }
@@ -183,7 +194,7 @@ y:point.y
 
 })
 
-// draw particles
+// update particles
 particles.forEach((p,index)=>{
 
 p.update()

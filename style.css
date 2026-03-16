@@ -10,7 +10,7 @@ width:100vw;
 height:100vh;
 }
 
-video, canvas{
+video,canvas{
 position:absolute;
 top:0;
 left:0;
@@ -20,4 +20,3 @@ object-fit:cover;
 
 transform:scaleX(-1);
 }
-
