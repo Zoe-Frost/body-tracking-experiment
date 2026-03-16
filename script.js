@@ -22,11 +22,7 @@ const skeleton = [
 ["right_elbow","right_wrist"],
 ["left_shoulder","left_hip"],
 ["right_shoulder","right_hip"],
-["left_hip","right_hip"],
-["left_hip","left_knee"],
-["left_knee","left_ankle"],
-["right_hip","right_knee"],
-["right_knee","right_ankle"]
+["left_hip","right_hip"]
 ]
 
 // particle class
