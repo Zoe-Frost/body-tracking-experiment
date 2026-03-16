@@ -1,3 +1,13 @@
+
+const jointImg = new Image()
+jointImg.src = "assets/lots-of-dots.svg"
+
+const glitchImg = new Image()
+glitchImg.src = "assets/glitch.svg"
+
+const silhouetteImg = new Image()
+silhouetteImg.src = "assets/shadow-1"
+
 const video = document.getElementById("video")
 const canvas = document.getElementById("canvas")
 const ctx = canvas.getContext("2d")
