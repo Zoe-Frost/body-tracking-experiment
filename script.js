@@ -4,16 +4,11 @@ const ctx = canvas.getContext("2d")
 
 let detector
 let particles = []
-let ghostFrames = []
 
-// load graphics
 const jointImg = new Image()
 jointImg.src = "assets/joint.svg"
 
-const particleImg = new Image()
-particleImg.src = "assets/particle.svg"
-
-// skeleton connections
+// skeleton structure
 const skeleton = [
 ["left_shoulder","right_shoulder"],
 ["left_shoulder","left_elbow"],
@@ -22,25 +17,19 @@ const skeleton = [
 ["right_elbow","right_wrist"],
 ["left_shoulder","left_hip"],
 ["right_shoulder","right_hip"],
-["left_hip","right_hip"],
-["left_hip","left_knee"],
-["left_knee","left_ankle"],
-["right_hip","right_knee"],
-["right_knee","right_ankle"]
+["left_hip","right_hip"]
 ]
 
-// particle class
+// simple particle
 class Particle{
 
 constructor(x,y){
 
 this.x = x
 this.y = y
-
-this.vx = (Math.random()-0.5)*5
-this.vy = (Math.random()-0.5)*5
-
-this.life = 60
+this.vx = (Math.random()-0.5)*3
+this.vy = (Math.random()-0.5)*3
+this.life = 40
 
 }
 
@@ -48,20 +37,15 @@ update(){
 
 this.x += this.vx
 this.y += this.vy
-
-this.vx *= 0.96
-this.vy *= 0.96
-
 this.life--
 
 }
 
 draw(){
 
-ctx.globalAlpha = this.life/60
-
-ctx.drawImage(particleImg,this.x,this.y,10,10)
-
+ctx.globalAlpha = this.life/40
+ctx.fillStyle="cyan"
+ctx.fillRect(this.x,this.y,2,2)
 ctx.globalAlpha = 1
 
 }
@@ -73,15 +57,17 @@ async function setupCamera(){
 
 const stream = await navigator.mediaDevices.getUserMedia({
 video:{
-width:640,
-height:480
+width:480,
+height:360
 }
 })
 
 video.srcObject = stream
 
 return new Promise(resolve=>{
-video.onloadedmetadata=()=>resolve(video)
+video.onloadedmetadata = ()=>{
+resolve(video)
+}
 })
 
 }
@@ -105,13 +91,13 @@ detect()
 
 }
 
-// skeleton drawing
-function drawSkeleton(keypoints){
+// draw skeleton
+function drawSkeleton(points){
 
 skeleton.forEach(pair=>{
 
-let p1 = keypoints.find(p=>p.name===pair[0])
-let p2 = keypoints.find(p=>p.name===pair[1])
+let p1 = points.find(p=>p.name === pair[0])
+let p2 = points.find(p=>p.name === pair[1])
 
 if(p1 && p2 && p1.score>0.4 && p2.score>0.4){
 
@@ -129,47 +115,14 @@ ctx.stroke()
 
 }
 
-// ghost trail effect
-function drawGhosts(){
-
-ghostFrames.forEach((frame,i)=>{
-
-ctx.globalAlpha = i / ghostFrames.length * 0.4
-
-ctx.drawImage(frame,0,0)
-
-})
-
-ctx.globalAlpha = 1
-
-}
-
-// detection loop
+// main loop
 async function detect(){
 
 const poses = await detector.estimatePoses(video)
 
 ctx.clearRect(0,0,canvas.width,canvas.height)
 
-// draw video
 ctx.drawImage(video,0,0)
-
-// store ghost frames
-const ghostCanvas = document.createElement("canvas")
-ghostCanvas.width = canvas.width
-ghostCanvas.height = canvas.height
-
-const gctx = ghostCanvas.getContext("2d")
-gctx.drawImage(canvas,0,0)
-
-ghostFrames.push(ghostCanvas)
-
-if(ghostFrames.length > 8){
-ghostFrames.shift()
-}
-
-// draw ghost trail
-drawGhosts()
 
 poses.forEach(pose=>{
 
@@ -177,15 +130,13 @@ drawSkeleton(pose.keypoints)
 
 pose.keypoints.forEach(point=>{
 
-if(point.score>0.4){
+if(point.score > 0.4){
 
-ctx.drawImage(jointImg,point.x-12,point.y-12,24,24)
+ctx.drawImage(jointImg,point.x-10,point.y-10,20,20)
 
-// spawn particles
-if(particles.length < 300){
-
+// spawn small particles
+if(particles.length < 80){
 particles.push(new Particle(point.x,point.y))
-
 }
 
 }
@@ -194,19 +145,22 @@ particles.push(new Particle(point.x,point.y))
 
 })
 
-// update particles
-particles.forEach((p,index)=>{
+// particles
+particles.forEach((p,i)=>{
 
 p.update()
 p.draw()
 
 if(p.life<=0){
-particles.splice(index,1)
+particles.splice(i,1)
 }
 
 })
 
+// slow detection slightly
+setTimeout(()=>{
 requestAnimationFrame(detect)
+},40)
 
 }
 
