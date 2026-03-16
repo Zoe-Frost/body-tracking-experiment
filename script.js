@@ -104,17 +104,7 @@ y + (Math.random()*20 -10),
 
 }
 
-ctx.globalAlpha = 0.25
 
-ctx.drawImage(
-silhouetteImg,
-canvas.width/2 -100,
-canvas.height/2 -200,
-200,
-400
-)
-
-ctx.globalAlpha = 1
 
 }
 
