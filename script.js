@@ -77,7 +77,34 @@ pose.keypoints.forEach(point=>{
 if(point.score > 0.4){
 
 drawJoint(point.x,point.y)
+
+function drawJoint(x, y){
+
+ctx.drawImage(
+jointImg,
+x - 20,
+y - 20,
+40,
+40
+)
+
+}
+
 drawGlitch(point.x,point.y)
+
+function drawGlitch(x, y){
+
+ctx.drawImage(
+glitchImg,
+x + (Math.random()*20 -10),
+y + (Math.random()*20 -10),
+20,
+20
+)
+
+}
+
+
 
 }
 
