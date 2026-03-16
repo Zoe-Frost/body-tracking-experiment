@@ -19,3 +19,9 @@ height:100%;
 object-fit:cover;
 transform:scaleX(-1);
 }
+
+.shadow-1{
+
+    size: 3cm;
+}
+
