@@ -61,12 +61,13 @@ ctx.clearRect(0,0,canvas.width,canvas.height)
 ctx.drawImage(video,0,0)
 
 poses.forEach(pose=>{
-
 pose.keypoints.forEach(point=>{
 
 if(point.score > 0.4){
 
 drawJoint(point.x,point.y)
+
+
 drawGlitch(point.x,point.y)
 
 }
