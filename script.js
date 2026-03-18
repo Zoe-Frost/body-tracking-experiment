@@ -2,44 +2,33 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-const texture = document.getElementById("texture"); // your image
+const texture = document.getElementById("texture");
 
 let segmentation;
 
-// 🎥 Setup canvas
-
+// ✅ Resize canvas to full screen
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-
-  window.addEventListener("resize", resizeCanvas);
 }
 
-// 🎥 Setup camera
+window.addEventListener("resize", resizeCanvas);
 
+// 🎥 Setup camera
 async function setupCamera() {
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { width: 640, height: 480 }
   });
-
-  
 
   video.srcObject = stream;
 
   return new Promise((resolve) => {
     video.onloadedmetadata = () => {
       video.play();
-
-      // Match canvas to video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
       resolve();
     };
   });
-   
 }
-
 
 // 🧠 Setup segmentation
 function setupSegmentation() {
@@ -55,23 +44,55 @@ function setupSegmentation() {
   segmentation.onResults(onResults);
 }
 
-// 🎨 Draw everything
+// 🎨 Draw everything (FULLSCREEN + MIRROR + TEXTURE)
 function onResults(results) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const cw = canvas.width;
+  const ch = canvas.height;
 
-  // 1. Draw camera FIRST (background)
-  ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+  const vw = results.image.width;
+  const vh = results.image.height;
 
-  // 2. Draw segmentation mask
+  // Scale to COVER screen
+  const scale = Math.max(cw / vw, ch / vh);
+
+  const drawWidth = vw * scale;
+  const drawHeight = vh * scale;
+
+  const offsetX = (cw - drawWidth) / 2;
+  const offsetY = (ch - drawHeight) / 2;
+
+  ctx.clearRect(0, 0, cw, ch);
+
+  // ✅ MIRRORED CAMERA
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.drawImage(
+    results.image,
+    -(drawWidth + offsetX),
+    offsetY,
+    drawWidth,
+    drawHeight
+  );
+  ctx.restore();
+
+  // ✅ Apply segmentation mask (also mirrored)
+  ctx.save();
+  ctx.scale(-1, 1);
   ctx.globalCompositeOperation = "destination-in";
-  ctx.drawImage(results.segmentationMask, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(
+    results.segmentationMask,
+    -(drawWidth + offsetX),
+    offsetY,
+    drawWidth,
+    drawHeight
+  );
+  ctx.restore();
 
-  // 3. Replace body with image texture
+  // ✅ Fill body with texture
   ctx.globalCompositeOperation = "source-in";
+  ctx.drawImage(texture, 0, 0, cw, ch);
 
-  ctx.drawImage(texture, 0, 0, canvas.width, canvas.height);
-
-  // 4. Reset blend mode
+  // Reset
   ctx.globalCompositeOperation = "source-over";
 }
 
@@ -84,6 +105,9 @@ async function render() {
 // 🚀 Start everything
 async function start() {
   await setupCamera();
+
+  resizeCanvas(); // ✅ FULLSCREEN FIX
+
   setupSegmentation();
   render();
 }
